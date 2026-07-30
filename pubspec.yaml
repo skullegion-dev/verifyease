@@ -1,23 +1,32 @@
 name: verifyease
-description: "A new Flutter project."
+description: "VerifyGlobally - Buy international virtual numbers"
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
-  sdk: '^3.5.0'     # This is the important line
+  sdk: ^3.5.0
 
 dependencies:
   flutter:
     sdk: flutter
+
+  cupertino_icons: ^1.0.8
   http: ^1.2.2
   provider: ^6.1.2
-  shared_preferences: ^2.3.2
-  url_launcher: ^6.3.0
   fluttertoast: ^8.2.8
+  url_launcher: ^6.3.0
+
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true

@@ -1,7 +1,10 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../providers/app_provider.dart';
+import '../services/auth_service.dart';
+import 'wallet_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -13,9 +16,15 @@ class CatalogScreen extends StatefulWidget {
 class _CatalogScreenState extends State<CatalogScreen> {
   final TextEditingController _countryController = TextEditingController();
   final TextEditingController _serviceController = TextEditingController();
+  final AuthService _authService = AuthService();
 
   String countryQuery = '';
   String serviceQuery = '';
+
+  String _usernameFromEmail(String? email) {
+    if (email == null || email.isEmpty) return 'User';
+    return email.split('@').first;
+  }
 
   @override
   void initState() {
@@ -28,6 +37,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
+    final user = FirebaseAuth.instance.currentUser;
+    final username = _usernameFromEmail(user?.email);
 
     return Scaffold(
       appBar: AppBar(
@@ -38,9 +49,86 @@ class _CatalogScreenState extends State<CatalogScreen> {
         centerTitle: true,
         backgroundColor: Colors.indigo[700],
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await _authService.signOut();
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
+          // Welcome message
+          if (user != null)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade100),
+              ),
+              child: Text(
+                'Welcome $username',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green.shade800,
+                ),
+              ),
+            ),
+
+          // Wallet bar
+          if (user != null)
+            StreamBuilder<double>(
+              stream: _authService.walletBalanceStream(user.uid),
+              builder: (context, snapshot) {
+                final balance = snapshot.data ?? 0.0;
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.account_balance_wallet,
+                          color: Colors.indigo),
+                      const SizedBox(width: 10),
+                      Text(
+                        "Balance: \$${balance.toStringAsFixed(2)}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const Spacer(),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const WalletScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text("Add Funds"),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
           // Country Search
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -166,7 +254,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   final isPopular = service['isPopular'] == true;
                   final int qty = service['qty'] ?? 0;
 
-                  // Stock color
                   Color stockColor = Colors.green;
                   if (qty < 20) stockColor = Colors.orange;
                   if (qty < 5) stockColor = Colors.red;

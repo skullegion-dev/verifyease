@@ -4,7 +4,7 @@ import 'dart:convert';
 
 class AppProvider extends ChangeNotifier {
   // ⚠️ Put your real 5SIM token here
-  String apiToken = "YOUR_NEW_5SIM_TOKEN_HERE";
+  String apiToken = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE4MTY5NTQ2ODMsImlhdCI6MTc4NTQxODY4MywicmF5IjoiOTVmOWNmNWJjYzQ3OTU3OTQyYjE3YzY4YWQxY2Q5YjAiLCJzdWIiOjQzODQwNzR9.NSNE1LkgLa9dp5nP_8kWMuqau-YdHD-0GLrYCjphgFOQCq2St9LYr-SX3M9_cPcrUSAWUfeTo136xDESXpX4iOSwXCatzcVgw8TD_1lzKqxKbYbWt6yXqiYBHq3hFpxkyzOuyuUuuFZvBYWcFDVH1An5qbGe8vkSYCCJqU3F2YCLSkSQuwZ5nLKmd9DAq3Wvs0UyZO8H3Yo3f_9sGTmKMxThTnSC9AcWkM_apHvv9xmUCog_fsDT1UoKLIOuM1XvzhKsg3eiUCpq5Uv_peY9HoL5zLt1tstBUZvBmHvFTUalEZKn9HjMOZmabT4-PCO1kkhq2XbcVACfInHJ6iHh0A";
 
   List<dynamic> countries = [];
   Map<String, List<Map<String, dynamic>>> countryServices = {};
@@ -15,7 +15,7 @@ class AppProvider extends ChangeNotifier {
     'usa',
     'canada',
     'australia',
-    'england', // 5SIM code
+    'england',
     'italy',
     'france',
     'germany',
@@ -39,7 +39,6 @@ class AppProvider extends ChangeNotifier {
         List<dynamic> tempCountries = data.keys.map((key) {
           String displayName = data[key]['text_en'] ?? key.toUpperCase();
 
-          // Rename England → UK
           if (key.toLowerCase() == 'england') {
             displayName = 'UK';
           }
@@ -51,7 +50,6 @@ class AppProvider extends ChangeNotifier {
           };
         }).toList();
 
-        // Priority countries first
         tempCountries.sort((a, b) {
           final aCode = a['code'].toString().toLowerCase();
           final bCode = b['code'].toString().toLowerCase();
@@ -120,13 +118,11 @@ class AppProvider extends ChangeNotifier {
       productsData.forEach((serviceName, info) {
         final int qty = info['Qty'] ?? 0;
 
-        // Only show services that have available numbers
         if (info['Category'] == 'activation' && qty > 0) {
           double bestCost = (info['Price'] ?? 0.25).toDouble();
           String bestOperator = "any";
           double bestRate = 0;
 
-          // Highest success rate operator
           if (pricesData.containsKey(serviceName)) {
             final operators = pricesData[serviceName] as Map<String, dynamic>;
 
@@ -148,7 +144,6 @@ class AppProvider extends ChangeNotifier {
             });
           }
 
-          // 50% profit margin
           double sellingPrice = bestCost * 1.5;
 
           services.add({
@@ -163,7 +158,6 @@ class AppProvider extends ChangeNotifier {
         }
       });
 
-      // Popular first, then alphabetical
       services.sort((a, b) {
         if (a['isPopular'] && !b['isPopular']) return -1;
         if (!a['isPopular'] && b['isPopular']) return 1;
