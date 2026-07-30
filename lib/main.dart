@@ -15,7 +15,7 @@ class VerifyEase extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AppProvider(),
       child: MaterialApp(
-        title: 'VerifyEase - Buy Virtual Numbers',
+        title: 'VerifyGlobally - Buy Virtual Numbers',
         theme: ThemeData(
           primarySwatch: Colors.indigo,
           useMaterial3: true,

@@ -3,17 +3,27 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class AppProvider extends ChangeNotifier {
-  String apiToken = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE4MTY5NTMzOTgsImlhdCI6MTc4NTQxNzM5OCwicmF5IjoiOTVmOWNmNWJjYzQ3OTU3OTQyYjE3YzY4YWQxY2Q5YjAiLCJzdWIiOjQzODQwNzR9.feZlZ1SmsoZAmepLceSz76czXBZu57AjlEhE7XK0H5fR-4xt4muwz19d8VYW730DsP0u-y_AwcC4fr9gE0GQldCIiMmtCwD8neD1rahqSgWdFx0cVfA8p_CzIZnawEJ2zuEK9VS9JVEP0-JsonvqpB2h42PXFKNHUG52Ytdx1BWU6nnThuO6sGqhg0ddrKNKxFUBnqVKyKICWS-dZ1WVwGioRi1kVS6xSKGHoO7dJZKh3Zunypy6TbqDx_2eGQOL0KVAJ53RSn1OvhcA-YePI9X68HlP0Cv9Ac4YI8oVRSQV7PizDGMnQIdxqbKcQz_qZaPPEhHFWFuNbQFjEXAL_A"; // ← Change this
+  // ⚠️ Put your real 5SIM token here
+  String apiToken = "YOUR_NEW_5SIM_TOKEN_HERE";
 
-  Map<String, double> priceCache = {};
   List<dynamic> countries = [];
-  Map<String, List<String>> services = {};
-
+  Map<String, List<Map<String, dynamic>>> countryServices = {};
   bool isLoading = false;
+  bool isLoadingServices = false;
 
-  // Fetch all countries
+  final List<String> priorityCountries = [
+    'usa',
+    'canada',
+    'australia',
+    'england', // 5SIM code
+    'italy',
+    'france',
+    'germany',
+  ];
+
   Future<void> fetchCountries() async {
     if (countries.isNotEmpty) return;
+
     isLoading = true;
     notifyListeners();
 
@@ -25,16 +35,43 @@ class AppProvider extends ChangeNotifier {
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        countries = data.keys.map((key) {
+
+        List<dynamic> tempCountries = data.keys.map((key) {
+          String displayName = data[key]['text_en'] ?? key.toUpperCase();
+
+          // Rename England → UK
+          if (key.toLowerCase() == 'england') {
+            displayName = 'UK';
+          }
+
           return {
             "code": key,
-            "name": data[key]['text_en'] ?? key.toUpperCase(),
+            "name": displayName,
             "flag": _getFlag(key),
           };
         }).toList();
 
-        // Sort alphabetically
-        countries.sort((a, b) => a['name'].compareTo(b['name']));
+        // Priority countries first
+        tempCountries.sort((a, b) {
+          final aCode = a['code'].toString().toLowerCase();
+          final bCode = b['code'].toString().toLowerCase();
+
+          final aIsPriority = priorityCountries.contains(aCode);
+          final bIsPriority = priorityCountries.contains(bCode);
+
+          if (aIsPriority && !bIsPriority) return -1;
+          if (!aIsPriority && bIsPriority) return 1;
+
+          if (aIsPriority && bIsPriority) {
+            return priorityCountries
+                .indexOf(aCode)
+                .compareTo(priorityCountries.indexOf(bCode));
+          }
+
+          return a['name'].compareTo(b['name']);
+        });
+
+        countries = tempCountries;
       }
     } catch (e) {
       print("Error fetching countries: $e");
@@ -44,54 +81,199 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _getFlag(String code) {
-    // Simple flag mapping (you can expand)
-    const flagMap = {
-      'usa': '🇺🇸', 'gb': '🇬🇧', 'canada': '🇨🇦', 'germany': '🇩🇪',
-      'france': '🇫🇷', 'india': '🇮🇳', 'brazil': '🇧🇷', 'nigeria': '🇳🇬',
-    };
-    return flagMap[code] ?? '🌍';
-  }
+  Future<void> fetchServicesForCountry(String countryCode) async {
+    if (countryServices.containsKey(countryCode)) return;
 
-  // Keep your existing methods
-  Future<double> getSellingPrice(String country, String product) async {
-    String key = "$country-$product";
-    if (priceCache.containsKey(key)) return priceCache[key]! * 1.5;
+    isLoadingServices = true;
+    notifyListeners();
 
     try {
-      final url = Uri.parse('https://5sim.net/v1/user/buy/activation/$country/any/$product');
-      final res = await http.get(url, headers: {
-        'Authorization': 'Bearer $apiToken',
-        'Accept': 'application/json',
-      });
+      final productsUrl =
+          Uri.parse('https://5sim.net/v1/guest/products/$countryCode/any');
+      final productsRes =
+          await http.get(productsUrl, headers: {'Accept': 'application/json'});
 
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        double cost = (data['price'] ?? 0.15).toDouble();
-        double yourPrice = cost * 1.5;
-        priceCache[key] = cost;
-        return double.parse(yourPrice.toStringAsFixed(2));
+      if (productsRes.statusCode != 200) {
+        isLoadingServices = false;
+        notifyListeners();
+        return;
       }
+
+      final productsData =
+          jsonDecode(productsRes.body) as Map<String, dynamic>;
+
+      final pricesUrl =
+          Uri.parse('https://5sim.net/v1/guest/prices?country=$countryCode');
+      final pricesRes =
+          await http.get(pricesUrl, headers: {'Accept': 'application/json'});
+
+      Map<String, dynamic> pricesData = {};
+      if (pricesRes.statusCode == 200) {
+        final decoded = jsonDecode(pricesRes.body);
+        if (decoded is Map && decoded.containsKey(countryCode)) {
+          pricesData = decoded[countryCode];
+        }
+      }
+
+      List<Map<String, dynamic>> services = [];
+
+      productsData.forEach((serviceName, info) {
+        final int qty = info['Qty'] ?? 0;
+
+        // Only show services that have available numbers
+        if (info['Category'] == 'activation' && qty > 0) {
+          double bestCost = (info['Price'] ?? 0.25).toDouble();
+          String bestOperator = "any";
+          double bestRate = 0;
+
+          // Highest success rate operator
+          if (pricesData.containsKey(serviceName)) {
+            final operators = pricesData[serviceName] as Map<String, dynamic>;
+
+            operators.forEach((operatorName, operatorInfo) {
+              double cost = (operatorInfo['cost'] ?? 999).toDouble();
+              int count = operatorInfo['count'] ?? 0;
+              double rate = (operatorInfo['rate'] ?? 0).toDouble();
+
+              if (count > 0) {
+                if (rate > bestRate) {
+                  bestRate = rate;
+                  bestCost = cost;
+                  bestOperator = operatorName;
+                } else if (rate == bestRate && cost < bestCost) {
+                  bestCost = cost;
+                  bestOperator = operatorName;
+                }
+              }
+            });
+          }
+
+          // 50% profit margin
+          double sellingPrice = bestCost * 1.5;
+
+          services.add({
+            "name": serviceName,
+            "cost": bestCost,
+            "price": double.parse(sellingPrice.toStringAsFixed(2)),
+            "qty": qty,
+            "operator": bestOperator,
+            "rate": bestRate,
+            "isPopular": _isPopularService(serviceName),
+          });
+        }
+      });
+
+      // Popular first, then alphabetical
+      services.sort((a, b) {
+        if (a['isPopular'] && !b['isPopular']) return -1;
+        if (!a['isPopular'] && b['isPopular']) return 1;
+        return a['name'].compareTo(b['name']);
+      });
+
+      countryServices[countryCode] = services;
     } catch (e) {
-      print("Price error: $e");
+      print("Error fetching services: $e");
     }
-    return 0.35;
+
+    isLoadingServices = false;
+    notifyListeners();
   }
 
-  Future<Map<String, dynamic>?> buyNumber(String country, String product) async {
+  bool _isPopularService(String name) {
+    const popular = [
+      'telegram',
+      'whatsapp',
+      'google',
+      'instagram',
+      'facebook',
+      'tiktok',
+      'discord',
+      'twitter',
+      'amazon',
+      'microsoft',
+    ];
+    return popular.contains(name.toLowerCase());
+  }
+
+  Future<Map<String, dynamic>?> buyNumber(
+    String country,
+    String product, {
+    String operator = "any",
+  }) async {
     try {
-      final url = Uri.parse('https://5sim.net/v1/user/buy/activation/$country/any/$product');
-      final res = await http.get(url, headers: {
-        'Authorization': 'Bearer $apiToken',
-        'Accept': 'application/json',
-      });
+      final url = Uri.parse(
+        'https://5sim.net/v1/user/buy/activation/$country/$operator/$product',
+      );
+
+      final res = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $apiToken',
+          'Accept': 'application/json',
+        },
+      );
 
       if (res.statusCode == 200) {
         return jsonDecode(res.body);
+      } else {
+        print("Buy failed: ${res.body}");
       }
     } catch (e) {
       print("Buy error: $e");
     }
     return null;
+  }
+
+  String _getFlag(String code) {
+    const flagMap = {
+      'usa': '🇺🇸',
+      'england': '🇬🇧',
+      'canada': '🇨🇦',
+      'germany': '🇩🇪',
+      'france': '🇫🇷',
+      'india': '🇮🇳',
+      'brazil': '🇧🇷',
+      'nigeria': '🇳🇬',
+      'russia': '🇷🇺',
+      'ukraine': '🇺🇦',
+      'indonesia': '🇮🇩',
+      'philippines': '🇵🇭',
+      'spain': '🇪🇸',
+      'italy': '🇮🇹',
+      'netherlands': '🇳🇱',
+      'poland': '🇵🇱',
+      'turkey': '🇹🇷',
+      'australia': '🇦🇺',
+      'mexico': '🇲🇽',
+      'argentina': '🇦🇷',
+      'colombia': '🇨🇴',
+      'chile': '🇨🇱',
+      'peru': '🇵🇪',
+      'vietnam': '🇻🇳',
+      'thailand': '🇹🇭',
+      'malaysia': '🇲🇾',
+      'singapore': '🇸🇬',
+      'hongkong': '🇭🇰',
+      'japan': '🇯🇵',
+      'southkorea': '🇰🇷',
+      'china': '🇨🇳',
+      'pakistan': '🇵🇰',
+      'bangladesh': '🇧🇩',
+      'egypt': '🇪🇬',
+      'southafrica': '🇿🇦',
+      'kenya': '🇰🇪',
+      'ghana': '🇬🇭',
+      'morocco': '🇲🇦',
+      'portugal': '🇵🇹',
+      'sweden': '🇸🇪',
+      'romania': '🇷🇴',
+      'czech': '🇨🇿',
+      'hungary': '🇭🇺',
+      'greece': '🇬🇷',
+      'israel': '🇮🇱',
+      'uae': '🇦🇪',
+      'saudiarabia': '🇸🇦',
+    };
+    return flagMap[code.toLowerCase()] ?? '🌍';
   }
 }
