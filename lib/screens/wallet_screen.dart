@@ -1,6 +1,8 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -14,6 +16,68 @@ class _WalletScreenState extends State<WalletScreen> {
   final AuthService _authService = AuthService();
   final List<double> packages = [5, 10, 20, 50];
   double? selectedAmount;
+  bool loading = false;
+
+  Future<void> _payWithStripe() async {
+    if (selectedAmount == null) {
+      Fluttertoast.showToast(msg: 'Select an amount first');
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      Fluttertoast.showToast(msg: 'Please login first');
+      return;
+    }
+
+    setState(() => loading = true);
+
+    try {
+      // IMPORTANT: same region as your deployed function
+      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('createCheckoutSession');
+
+      final result = await callable.call({
+        'amount': selectedAmount!.toInt(),
+      });
+
+      final data = result.data;
+      final url = data is Map ? data['url'] as String? : null;
+
+      if (url == null || url.isEmpty) {
+        throw Exception('No checkout URL returned');
+      }
+
+      final uri = Uri.parse(url);
+      final opened = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!opened) {
+        throw Exception('Could not open Stripe checkout');
+      }
+
+      Fluttertoast.showToast(
+        msg: 'Complete payment in the browser. Balance updates automatically.',
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } on FirebaseFunctionsException catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Payment error: ${e.code} - ${e.message}',
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: e.toString(),
+        toastLength: Toast.LENGTH_LONG,
+      );
+    }
+
+    if (mounted) {
+      setState(() => loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +150,6 @@ class _WalletScreenState extends State<WalletScreen> {
                         style: TextStyle(color: Colors.black54),
                       ),
                       const SizedBox(height: 16),
-
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
@@ -95,11 +158,13 @@ class _WalletScreenState extends State<WalletScreen> {
                           return ChoiceChip(
                             label: Text('\$${amount.toStringAsFixed(0)}'),
                             selected: selected,
-                            onSelected: (_) {
-                              setState(() {
-                                selectedAmount = amount;
-                              });
-                            },
+                            onSelected: loading
+                                ? null
+                                : (_) {
+                                    setState(() {
+                                      selectedAmount = amount;
+                                    });
+                                  },
                             selectedColor: Colors.indigo,
                             labelStyle: TextStyle(
                               color: selected ? Colors.white : Colors.black,
@@ -108,7 +173,6 @@ class _WalletScreenState extends State<WalletScreen> {
                           );
                         }).toList(),
                       ),
-
                       const SizedBox(height: 28),
                       const Text(
                         'Payment Method',
@@ -118,75 +182,39 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      _paymentButton(
-                        title: 'Card / Apple Pay / Google Pay',
-                        subtitle: 'Stripe',
-                        icon: Icons.credit_card,
-                        onTap: () {
-                          if (selectedAmount == null) {
-                            Fluttertoast.showToast(msg: 'Select an amount first');
-                            return;
-                          }
-                          Fluttertoast.showToast(
-                            msg:
-                                'Stripe coming next. Selected \$${selectedAmount!.toStringAsFixed(0)}',
-                          );
-                        },
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.credit_card,
+                            color: Colors.indigo,
+                          ),
+                          title: const Text(
+                            'Card / Apple Pay / Google Pay',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: const Text('Pay securely with Stripe'),
+                          trailing: loading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.chevron_right),
+                          onTap: loading ? null : _payWithStripe,
+                        ),
                       ),
-                      _paymentButton(
-                        title: 'PayPal',
-                        subtitle: 'Pay with PayPal balance or card',
-                        icon: Icons.account_balance,
-                        onTap: () {
-                          if (selectedAmount == null) {
-                            Fluttertoast.showToast(msg: 'Select an amount first');
-                            return;
-                          }
-                          Fluttertoast.showToast(
-                            msg:
-                                'PayPal coming next. Selected \$${selectedAmount!.toStringAsFixed(0)}',
-                          );
-                        },
-                      ),
-                      _paymentButton(
-                        title: 'Crypto',
-                        subtitle: 'USDT, BTC, ETH and more',
-                        icon: Icons.currency_bitcoin,
-                        onTap: () {
-                          if (selectedAmount == null) {
-                            Fluttertoast.showToast(msg: 'Select an amount first');
-                            return;
-                          }
-                          Fluttertoast.showToast(
-                            msg:
-                                'Crypto coming next. Selected \$${selectedAmount!.toStringAsFixed(0)}',
-                          );
-                        },
+                      const SizedBox(height: 8),
+                      const Text(
+                        'PayPal and Crypto will be added next.',
+                        style: TextStyle(color: Colors.black54),
                       ),
                     ],
                   ),
                 );
               },
             ),
-    );
-  }
-
-  Widget _paymentButton({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.indigo),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
     );
   }
 }
