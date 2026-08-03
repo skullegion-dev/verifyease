@@ -15,8 +15,11 @@ class WalletScreen extends StatefulWidget {
 class _WalletScreenState extends State<WalletScreen> {
   final AuthService _authService = AuthService();
   final List<double> packages = [5, 10, 20, 50];
+
   double? selectedAmount;
+  String? lastSessionId;
   bool loading = false;
+  bool confirming = false;
 
   Future<void> _payWithStripe() async {
     if (selectedAmount == null) {
@@ -33,7 +36,6 @@ class _WalletScreenState extends State<WalletScreen> {
     setState(() => loading = true);
 
     try {
-      // IMPORTANT: same region as your deployed function
       final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable('createCheckoutSession');
 
@@ -43,10 +45,15 @@ class _WalletScreenState extends State<WalletScreen> {
 
       final data = result.data;
       final url = data is Map ? data['url'] as String? : null;
+      final sessionId = data is Map ? data['sessionId'] as String? : null;
 
       if (url == null || url.isEmpty) {
         throw Exception('No checkout URL returned');
       }
+
+      setState(() {
+        lastSessionId = sessionId;
+      });
 
       final uri = Uri.parse(url);
       final opened = await launchUrl(
@@ -59,7 +66,7 @@ class _WalletScreenState extends State<WalletScreen> {
       }
 
       Fluttertoast.showToast(
-        msg: 'Complete payment in the browser. Balance updates automatically.',
+        msg: 'Complete payment, then tap "I completed payment"',
         toastLength: Toast.LENGTH_LONG,
       );
     } on FirebaseFunctionsException catch (e) {
@@ -74,9 +81,49 @@ class _WalletScreenState extends State<WalletScreen> {
       );
     }
 
-    if (mounted) {
-      setState(() => loading = false);
+    if (mounted) setState(() => loading = false);
+  }
+
+  Future<void> _confirmPayment() async {
+    if (lastSessionId == null || lastSessionId!.isEmpty) {
+      Fluttertoast.showToast(
+        msg: 'No payment session found. Start a top-up first.',
+      );
+      return;
     }
+
+    setState(() => confirming = true);
+
+    try {
+      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('confirmTopUp');
+
+      final result = await callable.call({
+        'sessionId': lastSessionId,
+      });
+
+      final data = result.data;
+      final amount = data is Map ? data['amount'] : null;
+
+      Fluttertoast.showToast(
+        msg: amount != null
+            ? 'Success! \$${amount} added to wallet'
+            : 'Payment confirmed',
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } on FirebaseFunctionsException catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Confirm error: ${e.code} - ${e.message}',
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: e.toString(),
+        toastLength: Toast.LENGTH_LONG,
+      );
+    }
+
+    if (mounted) setState(() => confirming = false);
   }
 
   @override
@@ -158,7 +205,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           return ChoiceChip(
                             label: Text('\$${amount.toStringAsFixed(0)}'),
                             selected: selected,
-                            onSelected: loading
+                            onSelected: (loading || confirming)
                                 ? null
                                 : (_) {
                                     setState(() {
@@ -202,12 +249,35 @@ class _WalletScreenState extends State<WalletScreen> {
                                   ),
                                 )
                               : const Icon(Icons.chevron_right),
-                          onTap: loading ? null : _payWithStripe,
+                          onTap: (loading || confirming) ? null : _payWithStripe,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green[700],
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed:
+                              (loading || confirming) ? null : _confirmPayment,
+                          child: confirming
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('I completed payment'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       const Text(
-                        'PayPal and Crypto will be added next.',
+                        'After paying on Stripe, return here and tap "I completed payment" to update your balance.',
                         style: TextStyle(color: Colors.black54),
                       ),
                     ],
