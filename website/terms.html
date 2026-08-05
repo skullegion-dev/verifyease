@@ -9,6 +9,8 @@
     :root {
       --hostinger: #673DE6;
       --hostinger-dark: #4C1D95;
+      --twilio-red: #F22F46;
+      --twilio-blue: #0263E0;
       --bg: #F6F4FF;
       --border: #E8E5FF;
       --muted: #64748B;
@@ -29,6 +31,15 @@
       border-radius: 18px;
       padding: 32px;
       box-shadow: 0 10px 30px rgba(76, 29, 149, 0.06);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--hostinger), var(--twilio-blue), var(--twilio-red));
     }
     a { color: var(--hostinger); text-decoration: none; font-weight: 600; }
     a:hover { color: var(--hostinger-dark); }
