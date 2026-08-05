@@ -6,11 +6,38 @@
   <title>Privacy Policy — GlobeLine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: Inter, system-ui, sans-serif; max-width: 880px; margin: 40px auto; padding: 0 20px 60px; line-height: 1.75; color: #0f172a; background: #f8fafc; }
-    .card { background: white; border: 1px solid #e2e8f0; border-radius: 18px; padding: 32px; }
-    a { color: #0f766e; text-decoration: none; }
-    h1, h2 { color: #115e59; }
-    .muted { color: #64748b; margin-bottom: 24px; }
+    :root {
+      --hostinger: #673DE6;
+      --hostinger-dark: #4C1D95;
+      --bg: #F6F4FF;
+      --border: #E8E5FF;
+      --muted: #64748B;
+      --navy: #0B1220;
+    }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      max-width: 880px;
+      margin: 40px auto;
+      padding: 0 20px 60px;
+      line-height: 1.75;
+      color: var(--navy);
+      background: var(--bg);
+    }
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(76, 29, 149, 0.06);
+    }
+    a { color: var(--hostinger); text-decoration: none; font-weight: 600; }
+    a:hover { color: var(--hostinger-dark); }
+    h1, h2 { color: var(--hostinger-dark); }
+    h1 { margin: 12px 0 8px; }
+    h2 { margin-top: 28px; margin-bottom: 8px; }
+    .muted { color: var(--muted); margin-bottom: 24px; }
+    ul { padding-left: 20px; }
+    li { margin: 8px 0; }
   </style>
 </head>
 <body>
@@ -18,23 +45,37 @@
     <p><a href="index.html">← Back to home</a></p>
     <h1>Privacy Policy</h1>
     <p class="muted">Last updated: August 5, 2026</p>
+
     <p>GlobeLine (“we”, “our”, or “us”) provides international phone number services. This Privacy Policy explains how we collect, use, and protect your information.</p>
+
     <h2>Information we collect</h2>
     <ul>
       <li>Account information such as email address and login provider data</li>
       <li>Payment-related information processed by our payment providers</li>
-      <li>Usage data such as purchases and technical logs</li>
-      <li>Support messages you send us</li>
+      <li>Usage data such as purchases, selected services, and technical logs</li>
+      <li>Support messages you send to us</li>
     </ul>
+
     <h2>How we use information</h2>
     <ul>
       <li>To create and manage your account</li>
       <li>To process payments and wallet top-ups</li>
       <li>To deliver numbers and related services</li>
-      <li>To improve security, prevent fraud, and provide support</li>
+      <li>To improve security, prevent fraud, and provide customer support</li>
     </ul>
+
     <h2>Payment processing</h2>
     <p>Payments are processed by third-party providers such as Stripe. We do not store full card numbers on our servers.</p>
+
+    <h2>Third-party services</h2>
+    <p>We use trusted providers for authentication, database hosting, payments, and number provisioning. These providers process data only as needed to deliver the service.</p>
+
+    <h2>Data retention</h2>
+    <p>We retain account and transaction records as needed to operate the service, meet legal obligations, and resolve disputes.</p>
+
+    <h2>Your rights</h2>
+    <p>You may request access, correction, or deletion of your account data by contacting support, subject to legal and operational requirements.</p>
+
     <h2>Contact</h2>
     <p>Email: <a href="mailto:support@globeline.online">support@globeline.online</a></p>
   </div>
