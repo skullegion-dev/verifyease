@@ -3,17 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VerifyGlobally — International Virtual Numbers</title>
-  <meta name="description" content="Buy international virtual numbers for SMS verification. Fast, private, and affordable with secure wallet payments." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <title>GlobeLine — International Phone Numbers</title>
+  <meta name="description" content="Get international phone numbers for business, travel, and online accounts. Secure wallet payments and global coverage." />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --primary: #4f46e5;
-      --primary-dark: #312e81;
-      --primary-soft: #eef2ff;
-      --accent: #06b6d4;
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --primary-soft: #ecfdf5;
+      --accent: #0284c7;
       --bg: #f8fafc;
       --text: #0f172a;
       --muted: #64748b;
@@ -21,7 +19,6 @@
       --border: #e2e8f0;
       --success: #16a34a;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -31,326 +28,140 @@
     }
     a { color: inherit; text-decoration: none; }
     .container { width: min(1120px, 92%); margin: 0 auto; }
-
     header {
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.92);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      position: sticky; top: 0; z-index: 50;
     }
     .nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 0;
-      gap: 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0; gap: 16px;
     }
     .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 800;
-      font-size: 1.2rem;
-      color: var(--primary-dark);
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 1.2rem; color: var(--primary-dark);
     }
     .logo-mark {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: 36px; height: 36px; border-radius: 10px;
       background: linear-gradient(135deg, var(--primary), var(--accent));
-      display: grid;
-      place-items: center;
-      color: white;
-      font-weight: 800;
+      display: grid; place-items: center; color: white; font-weight: 800;
     }
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 22px;
-    }
-    .nav-links a {
-      color: var(--muted);
-      font-weight: 500;
-      font-size: 0.95rem;
-    }
+    .nav-links { display: flex; align-items: center; gap: 22px; }
+    .nav-links a { color: var(--muted); font-weight: 500; }
     .nav-links a:hover { color: var(--primary); }
-
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: var(--primary);
-      color: #fff !important;
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-weight: 700;
-      border: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--primary); color: #fff !important;
+      padding: 12px 20px; border-radius: 12px; font-weight: 700;
+      box-shadow: 0 8px 20px rgba(15, 118, 110, 0.25);
       transition: 0.2s ease;
-      box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
     }
-    .btn:hover {
-      background: var(--primary-dark);
-      transform: translateY(-1px);
-    }
+    .btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
     .btn-outline {
-      background: transparent;
-      color: var(--primary) !important;
-      border: 2px solid #c7d2fe;
-      box-shadow: none;
+      background: transparent; color: var(--primary) !important;
+      border: 2px solid #99f6e4; box-shadow: none;
     }
-    .btn-outline:hover {
-      background: var(--primary-soft);
-      border-color: var(--primary);
-    }
-
+    .btn-outline:hover { background: var(--primary-soft); }
     .hero {
       padding: 80px 0 60px;
       background:
-        radial-gradient(circle at top right, rgba(6,182,212,0.12), transparent 40%),
-        radial-gradient(circle at top left, rgba(79,70,229,0.15), transparent 35%),
-        linear-gradient(180deg, #eef2ff 0%, var(--bg) 70%);
+        radial-gradient(circle at top right, rgba(2,132,199,0.10), transparent 40%),
+        radial-gradient(circle at top left, rgba(15,118,110,0.14), transparent 35%),
+        linear-gradient(180deg, #ecfdf5 0%, var(--bg) 70%);
     }
     .hero-grid {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 40px;
-      align-items: center;
+      display: grid; grid-template-columns: 1.15fr 0.85fr;
+      gap: 40px; align-items: center;
     }
     .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: white;
-      border: 1px solid var(--border);
-      color: var(--primary);
-      font-weight: 600;
-      font-size: 0.85rem;
-      padding: 6px 12px;
-      border-radius: 999px;
-      margin-bottom: 18px;
+      display: inline-flex; gap: 8px; align-items: center;
+      background: white; border: 1px solid var(--border);
+      color: var(--primary); font-weight: 600; font-size: 0.85rem;
+      padding: 6px 12px; border-radius: 999px; margin-bottom: 18px;
     }
     .hero h1 {
-      font-size: clamp(2.2rem, 4.5vw, 3.4rem);
-      line-height: 1.1;
-      margin-bottom: 16px;
-      color: var(--primary-dark);
-      letter-spacing: -0.03em;
+      font-size: clamp(2.2rem, 4.5vw, 3.3rem);
+      line-height: 1.1; margin-bottom: 16px;
+      color: var(--primary-dark); letter-spacing: -0.03em;
     }
     .hero p {
-      color: var(--muted);
-      font-size: 1.08rem;
-      margin-bottom: 28px;
-      max-width: 540px;
+      color: var(--muted); font-size: 1.08rem;
+      margin-bottom: 28px; max-width: 540px;
     }
-    .hero-actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 28px;
-    }
-    .trust-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-    .trust-row span {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+    .trust-row { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 0.92rem; }
     .hero-card {
-      background: rgba(255,255,255,0.95);
-      border: 1px solid rgba(226,232,240,0.9);
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: 0 25px 50px rgba(49, 46, 129, 0.12);
+      background: rgba(255,255,255,0.96);
+      border: 1px solid var(--border);
+      border-radius: 24px; padding: 28px;
+      box-shadow: 0 25px 50px rgba(17, 94, 89, 0.10);
     }
-    .hero-card h3 {
-      font-size: 1.15rem;
-      margin-bottom: 14px;
-    }
-    .feature-list {
-      list-style: none;
-      display: grid;
-      gap: 12px;
-    }
-    .feature-list li {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      color: var(--muted);
-    }
+    .hero-card h3 { margin-bottom: 14px; }
+    .feature-list { list-style: none; display: grid; gap: 12px; }
+    .feature-list li { display: flex; gap: 10px; color: var(--muted); }
     .check {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: #dcfce7;
-      color: var(--success);
-      display: grid;
-      place-items: center;
-      font-size: 0.8rem;
-      font-weight: 800;
-      flex-shrink: 0;
-      margin-top: 2px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #dcfce7; color: var(--success);
+      display: grid; place-items: center; font-weight: 800; flex-shrink: 0;
     }
     .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 22px;
-      padding-top: 18px;
-      border-top: 1px solid var(--border);
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
     }
-    .stat {
-      text-align: center;
-    }
-    .stat strong {
-      display: block;
-      font-size: 1.15rem;
-      color: var(--primary-dark);
-    }
-    .stat span {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
+    .stat { text-align: center; }
+    .stat strong { display: block; color: var(--primary-dark); }
+    .stat span { font-size: 0.8rem; color: var(--muted); }
     section { padding: 70px 0; }
-    .section-title {
-      text-align: center;
-      margin-bottom: 40px;
-    }
+    .section-title { text-align: center; margin-bottom: 40px; }
     .section-title h2 {
       font-size: clamp(1.6rem, 3vw, 2.1rem);
-      color: var(--primary-dark);
-      margin-bottom: 10px;
-      letter-spacing: -0.02em;
+      color: var(--primary-dark); margin-bottom: 10px;
     }
-    .section-title p {
-      color: var(--muted);
-      max-width: 560px;
-      margin: 0 auto;
-    }
-
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
+    .section-title p { color: var(--muted); max-width: 560px; margin: 0 auto; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
     .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 24px;
-      transition: 0.2s ease;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 24px; transition: 0.2s ease;
     }
     .card:hover {
       transform: translateY(-3px);
       box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
-      border-color: #c7d2fe;
+      border-color: #99f6e4;
     }
     .icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      background: var(--primary-soft);
-      color: var(--primary);
-      font-size: 1.2rem;
-      margin-bottom: 14px;
+      width: 44px; height: 44px; border-radius: 12px;
+      display: grid; place-items: center;
+      background: var(--primary-soft); margin-bottom: 14px; font-size: 1.2rem;
     }
-    .card h3 { margin-bottom: 8px; font-size: 1.1rem; }
-    .card p { color: var(--muted); font-size: 0.96rem; }
-
+    .card h3 { margin-bottom: 8px; }
+    .card p { color: var(--muted); }
     .step-num {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
+      width: 34px; height: 34px; border-radius: 50%;
       background: linear-gradient(135deg, var(--primary), var(--accent));
-      color: white;
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-      margin-bottom: 14px;
-    }
-
-    .cta-wrap {
-      padding-bottom: 80px;
+      color: white; display: grid; place-items: center;
+      font-weight: 800; margin-bottom: 14px;
     }
     .cta {
-      background: linear-gradient(135deg, #312e81, #4f46e5 55%, #0891b2);
-      color: white;
-      border-radius: 28px;
-      padding: 56px 28px;
-      text-align: center;
-      box-shadow: 0 25px 50px rgba(49, 46, 129, 0.25);
+      background: linear-gradient(135deg, #115e59, #0f766e 55%, #0284c7);
+      color: white; border-radius: 28px; padding: 56px 28px; text-align: center;
+      box-shadow: 0 25px 50px rgba(17, 94, 89, 0.25);
     }
-    .cta h2 {
-      font-size: clamp(1.6rem, 3vw, 2.2rem);
-      margin-bottom: 12px;
-      letter-spacing: -0.02em;
-    }
-    .cta p {
-      color: #c7d2fe;
-      margin-bottom: 24px;
-      max-width: 520px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .cta .btn {
-      background: white;
-      color: var(--primary-dark) !important;
-      box-shadow: none;
-    }
-    .cta .btn:hover {
-      background: #eef2ff;
-    }
-
+    .cta h2 { margin-bottom: 12px; }
+    .cta p { color: #ccfbf1; margin-bottom: 24px; max-width: 520px; margin-left: auto; margin-right: auto; }
+    .cta .btn { background: white; color: var(--primary-dark) !important; box-shadow: none; }
     footer {
-      padding: 36px 0;
-      border-top: 1px solid var(--border);
-      background: white;
-      color: var(--muted);
-      font-size: 0.92rem;
+      padding: 36px 0; border-top: 1px solid var(--border);
+      background: white; color: var(--muted); font-size: 0.92rem;
     }
     .footer-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 18px;
-      flex-wrap: wrap;
-      align-items: center;
+      display: flex; justify-content: space-between; gap: 18px;
+      flex-wrap: wrap; align-items: center;
     }
-    .footer-links {
-      display: flex;
-      gap: 18px;
-      flex-wrap: wrap;
-    }
-    .footer-links a:hover { color: var(--primary); }
-
+    .footer-links { display: flex; gap: 18px; flex-wrap: wrap; }
     @media (max-width: 860px) {
-      .hero-grid,
-      .grid-3 {
-        grid-template-columns: 1fr;
-      }
-      .nav-links .desktop-only {
-        display: none;
-      }
-      .stat-grid {
-        grid-template-columns: 1fr;
-        text-align: left;
-      }
-      .stat {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        text-align: left;
-      }
+      .hero-grid, .grid-3 { grid-template-columns: 1fr; }
+      .desktop-only { display: none; }
     }
   </style>
 </head>
@@ -358,8 +169,8 @@
   <header>
     <div class="container nav">
       <a class="logo" href="index.html">
-        <div class="logo-mark">VG</div>
-        VerifyGlobally
+        <div class="logo-mark">GL</div>
+        GlobeLine
       </a>
       <div class="nav-links">
         <a class="desktop-only" href="#features">Features</a>
@@ -374,11 +185,11 @@
     <section class="hero">
       <div class="container hero-grid">
         <div>
-          <div class="badge">🌍 Global SMS verification numbers</div>
-          <h1>Virtual numbers for verification, worldwide</h1>
+          <div class="badge">🌍 International phone numbers</div>
+          <h1>A modern second number for work and travel</h1>
           <p>
-            Get temporary international numbers for account verification.
-            Top up your wallet, choose a country and service, and receive your number fast.
+            Stay reachable worldwide with international phone numbers for business,
+            personal use, and online accounts. Simple wallet payments and global coverage.
           </p>
           <div class="hero-actions" id="get-started">
             <a class="btn" href="support.html">Get the App</a>
@@ -386,33 +197,24 @@
           </div>
           <div class="trust-row">
             <span>🔒 Secure payments</span>
-            <span>⚡ Instant delivery</span>
-            <span>📱 iOS first, Android next</span>
+            <span>⚡ Fast setup</span>
+            <span>📱 iOS first</span>
           </div>
         </div>
 
         <div class="hero-card">
-          <h3>Why people use VerifyGlobally</h3>
+          <h3>Why GlobeLine</h3>
           <ul class="feature-list">
-            <li><span class="check">✓</span><span>Numbers available across multiple countries</span></li>
-            <li><span class="check">✓</span><span>Built for SMS / OTP verification use cases</span></li>
-            <li><span class="check">✓</span><span>Simple wallet top-ups from $5</span></li>
+            <li><span class="check">✓</span><span>International numbers across many countries</span></li>
+            <li><span class="check">✓</span><span>Useful for work, travel, and online accounts</span></li>
+            <li><span class="check">✓</span><span>Secure wallet top-ups from $5</span></li>
             <li><span class="check">✓</span><span>Clear pricing before you buy</span></li>
             <li><span class="check">✓</span><span>Support when you need help</span></li>
           </ul>
           <div class="stat-grid">
-            <div class="stat">
-              <strong>Global</strong>
-              <span>Coverage</span>
-            </div>
-            <div class="stat">
-              <strong>Wallet</strong>
-              <span>Payments</span>
-            </div>
-            <div class="stat">
-              <strong>Fast</strong>
-              <span>Checkout</span>
-            </div>
+            <div class="stat"><strong>Global</strong><span>Coverage</span></div>
+            <div class="stat"><strong>Wallet</strong><span>Payments</span></div>
+            <div class="stat"><strong>Simple</strong><span>Setup</span></div>
           </div>
         </div>
       </div>
@@ -421,24 +223,24 @@
     <section id="features">
       <div class="container">
         <div class="section-title">
-          <h2>Everything you need to verify accounts</h2>
-          <p>A clean experience focused on reliability, speed, and simple pricing.</p>
+          <h2>Built for global communication</h2>
+          <p>A clean experience for people who need a reliable second number.</p>
         </div>
         <div class="grid-3">
           <div class="card">
             <div class="icon">🌐</div>
             <h3>Global coverage</h3>
-            <p>Choose from popular destinations like USA, UK, Canada, and many more as supply allows.</p>
+            <p>Access numbers from popular destinations as supply allows.</p>
           </div>
           <div class="card">
             <div class="icon">💳</div>
             <h3>Secure wallet</h3>
-            <p>Top up once and buy numbers whenever you need them. No repeated checkout friction.</p>
+            <p>Top up once and use your balance whenever you need a number.</p>
           </div>
           <div class="card">
-            <div class="icon">📨</div>
-            <h3>Verification focused</h3>
-            <p>Designed for OTP and account verification across major apps and services.</p>
+            <div class="icon">🛡️</div>
+            <h3>Privacy minded</h3>
+            <p>Keep your personal number private while staying reachable online.</p>
           </div>
         </div>
       </div>
@@ -448,35 +250,33 @@
       <div class="container">
         <div class="section-title">
           <h2>How it works</h2>
-          <p>Three simple steps. No complicated setup.</p>
+          <p>Three simple steps.</p>
         </div>
         <div class="grid-3">
           <div class="card">
             <div class="step-num">1</div>
             <h3>Create an account</h3>
-            <p>Sign up with email or Google and access your personal wallet.</p>
+            <p>Sign up with email or Google and access your wallet.</p>
           </div>
           <div class="card">
             <div class="step-num">2</div>
             <h3>Add funds</h3>
-            <p>Top up securely starting from $5 using card payments.</p>
+            <p>Top up securely starting from $5.</p>
           </div>
           <div class="card">
             <div class="step-num">3</div>
-            <h3>Buy a number</h3>
-            <p>Pick a country and service, then receive your number for verification.</p>
+            <h3>Get your number</h3>
+            <p>Choose a country and service, then receive your number.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="cta-wrap">
+    <section style="padding-bottom: 80px;">
       <div class="container">
         <div class="cta">
-          <h2>Ready to verify globally?</h2>
-          <p>
-            VerifyGlobally is launching on iOS first, with Android and expanded access coming next.
-          </p>
+          <h2>Ready to go global?</h2>
+          <p>GlobeLine is launching on iOS first, with Android coming next.</p>
           <a class="btn" href="support.html">Contact support</a>
         </div>
       </div>
@@ -485,7 +285,7 @@
 
   <footer>
     <div class="container footer-row">
-      <div>© 2026 VerifyGlobally. All rights reserved.</div>
+      <div>© 2026 GlobeLine. All rights reserved.</div>
       <div class="footer-links">
         <a href="privacy.html">Privacy Policy</a>
         <a href="terms.html">Terms of Service</a>
