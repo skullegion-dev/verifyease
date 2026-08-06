@@ -1,7 +1,8 @@
-﻿import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/auth_service.dart';
 import 'wallet_screen.dart';
@@ -20,6 +21,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   String countryQuery = '';
   String serviceQuery = '';
+  bool confirmingPayment = false;
 
   String _usernameFromEmail(String? email) {
     if (email == null || email.isEmpty) return 'User';
@@ -29,9 +31,124 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   void initState() {
     super.initState();
+
     Future.microtask(() {
       Provider.of<AppProvider>(context, listen: false).fetchCountries();
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoConfirmIfNeeded();
+    });
+  }
+
+  @override
+  void dispose() {
+    _countryController.dispose();
+    _serviceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _autoConfirmIfNeeded() async {
+    final uri = Uri.base;
+    final payment = uri.queryParameters['payment'];
+    final sessionId = uri.queryParameters['session_id'];
+
+    if (payment != 'success' || sessionId == null || sessionId.isEmpty) {
+      return;
+    }
+
+    if (confirmingPayment) return;
+
+    setState(() => confirmingPayment = true);
+
+    try {
+      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('confirmTopUp');
+
+      final result = await callable.call({'sessionId': sessionId});
+      final data = result.data;
+      final amount = data is Map ? data['amount'] : null;
+
+      Fluttertoast.showToast(
+        msg: amount != null
+            ? 'Success! \$$amount added to wallet'
+            : 'Payment confirmed',
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (!(e.message ?? '').toLowerCase().contains('already')) {
+        Fluttertoast.showToast(
+          msg: 'Confirm error: ${e.code} - ${e.message}',
+          toastLength: Toast.LENGTH_LONG,
+        );
+      }
+    } catch (_) {
+      // Ignore redirect noise
+    }
+
+    if (mounted) {
+      setState(() => confirmingPayment = false);
+    }
+  }
+
+  Future<void> _buyNumber({
+    required String countryCode,
+    required Map service,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      Fluttertoast.showToast(msg: 'Please login first');
+      return;
+    }
+
+    Fluttertoast.showToast(msg: 'Buying number...');
+
+    try {
+      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('buyNumber');
+
+      final result = await callable.call({
+        'country': countryCode,
+        'product': service['name'],
+        'operator': service['operator'] ?? 'any',
+        'price': service['price'],
+      });
+
+      final data = result.data;
+      final phone = data is Map ? data['phone'] : null;
+      final activationId = data is Map ? data['activationId'] : null;
+      final price = data is Map ? data['price'] : service['price'];
+
+      if (phone != null && mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Number Purchased'),
+            content: Text(
+              'Phone: $phone\n'
+              'ID: ${activationId ?? '-'}\n'
+              'Price: \$$price\n\n'
+              'Use this number for verification. SMS should arrive shortly.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        Fluttertoast.showToast(msg: 'Buy failed');
+      }
+    } on FirebaseFunctionsException catch (e) {
+      Fluttertoast.showToast(
+        msg: '${e.code}: ${e.message}',
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(msg: e.toString());
+    }
   }
 
   @override
@@ -51,6 +168,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh catalog',
+            onPressed: () {
+              provider.countryServices.clear();
+              provider.fetchCountries(force: true);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await _authService.signOut();
@@ -60,7 +185,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
       ),
       body: Column(
         children: [
-          // Welcome message
           if (user != null)
             Container(
               width: double.infinity,
@@ -80,8 +204,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 ),
               ),
             ),
-
-          // Wallet bar
           if (user != null)
             StreamBuilder<double>(
               stream: _authService.walletBalanceStream(user.uid),
@@ -97,17 +219,33 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.account_balance_wallet,
-                          color: Colors.indigo),
+                      const Icon(
+                        Icons.account_balance_wallet,
+                        color: Colors.indigo,
+                      ),
                       const SizedBox(width: 10),
-                      Text(
-                        "Balance: \$${balance.toStringAsFixed(2)}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Balance: \$${balance.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (confirmingPayment)
+                              const Text(
+                                'Confirming payment...',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      const Spacer(),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.indigo,
@@ -121,15 +259,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
                             ),
                           );
                         },
-                        child: const Text("Add Funds"),
+                        child: const Text('Add Funds'),
                       ),
                     ],
                   ),
                 );
               },
             ),
-
-          // Country Search
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
@@ -150,8 +286,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
               },
             ),
           ),
-
-          // Service Search
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: TextField(
@@ -172,11 +306,33 @@ class _CatalogScreenState extends State<CatalogScreen> {
               },
             ),
           ),
-
+          if (provider.lastError != null && provider.countries.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Catalog error: ${provider.lastError}',
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
           Expanded(
             child: provider.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _buildContent(provider),
+                : provider.countries.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('No countries loaded'),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () =>
+                                  provider.fetchCountries(force: true),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : _buildContent(provider),
           ),
         ],
       ),
@@ -196,9 +352,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
       itemCount: filteredCountries.length,
       itemBuilder: (context, index) {
         final country = filteredCountries[index];
-        final countryCode = country['code'];
+        final countryCode = (country['code'] ?? '').toString().toLowerCase();
         final isPriority =
-            provider.priorityCountries.contains(countryCode.toLowerCase());
+            provider.priorityCountries.contains(countryCode);
 
         if (!provider.countryServices.containsKey(countryCode)) {
           provider.fetchServicesForCountry(countryCode);
@@ -247,12 +403,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
               else if (matchingServices.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text("No numbers available"),
+                  child: Text('No numbers available'),
                 )
               else
                 ...matchingServices.map((service) {
                   final isPopular = service['isPopular'] == true;
-                  final int qty = service['qty'] ?? 0;
+                  final int qty = service['qty'] is int
+                      ? service['qty'] as int
+                      : int.tryParse('${service['qty']}') ?? 0;
 
                   Color stockColor = Colors.green;
                   if (qty < 20) stockColor = Colors.orange;
@@ -280,7 +438,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Text(
-                              "POPULAR",
+                              'POPULAR',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -290,7 +448,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       ],
                     ),
                     subtitle: Text(
-                      "$qty available",
+                      '$qty available',
                       style: TextStyle(
                         color: stockColor,
                         fontWeight: FontWeight.w500,
@@ -300,7 +458,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          "\$${service['price']}",
+                          '\$${service['price']}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -313,29 +471,16 @@ class _CatalogScreenState extends State<CatalogScreen> {
                             backgroundColor: Colors.indigo,
                             foregroundColor: Colors.white,
                           ),
-                          onPressed: () async {
-                            Fluttertoast.showToast(msg: "Buying number...");
-                            final result = await provider.buyNumber(
-                              countryCode,
-                              service['name'],
-                              operator: service['operator'] ?? "any",
-                            );
-
-                            if (result != null && result['phone'] != null) {
-                              Fluttertoast.showToast(
-                                msg: "✅ ${result['phone']}",
-                                toastLength: Toast.LENGTH_LONG,
-                              );
-                            } else {
-                              Fluttertoast.showToast(msg: "❌ Failed to buy");
-                            }
-                          },
-                          child: const Text("Buy"),
+                          onPressed: () => _buyNumber(
+                            countryCode: countryCode,
+                            service: service,
+                          ),
+                          child: const Text('Buy'),
                         ),
                       ],
                     ),
                   );
-                }).toList(),
+                }),
             ],
           ),
         );

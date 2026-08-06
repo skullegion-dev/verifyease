@@ -1,15 +1,17 @@
-﻿import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+﻿import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 
 class AppProvider extends ChangeNotifier {
-  // ⚠️ Put your real 5SIM token here
-  String apiToken = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE4MTY5NTQ2ODMsImlhdCI6MTc4NTQxODY4MywicmF5IjoiOTVmOWNmNWJjYzQ3OTU3OTQyYjE3YzY4YWQxY2Q5YjAiLCJzdWIiOjQzODQwNzR9.NSNE1LkgLa9dp5nP_8kWMuqau-YdHD-0GLrYCjphgFOQCq2St9LYr-SX3M9_cPcrUSAWUfeTo136xDESXpX4iOSwXCatzcVgw8TD_1lzKqxKbYbWt6yXqiYBHq3hFpxkyzOuyuUuuFZvBYWcFDVH1An5qbGe8vkSYCCJqU3F2YCLSkSQuwZ5nLKmd9DAq3Wvs0UyZO8H3Yo3f_9sGTmKMxThTnSC9AcWkM_apHvv9xmUCog_fsDT1UoKLIOuM1XvzhKsg3eiUCpq5Uv_peY9HoL5zLt1tstBUZvBmHvFTUalEZKn9HjMOZmabT4-PCO1kkhq2XbcVACfInHJ6iHh0A";
+  final FirebaseFunctions _functions =
+      FirebaseFunctions.instanceFor(region: 'us-central1');
 
-  List<dynamic> countries = [];
+  List<Map<String, dynamic>> countries = [];
   Map<String, List<Map<String, dynamic>>> countryServices = {};
+  final Set<String> _loadingCountryCodes = {};
+
   bool isLoading = false;
   bool isLoadingServices = false;
+  String? lastError;
 
   final List<String> priorityCountries = [
     'usa',
@@ -21,58 +23,58 @@ class AppProvider extends ChangeNotifier {
     'germany',
   ];
 
-  Future<void> fetchCountries() async {
-    if (countries.isNotEmpty) return;
+  Future<void> fetchCountries({bool force = false}) async {
+    if (countries.isNotEmpty && !force) return;
 
     isLoading = true;
+    lastError = null;
     notifyListeners();
 
     try {
-      final res = await http.get(
-        Uri.parse('https://5sim.net/v1/guest/countries'),
-        headers: {'Accept': 'application/json'},
-      );
+      final result = await _functions.httpsCallable('getCountries').call();
+      final data = result.data;
 
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final list = (data is Map && data['countries'] is List)
+          ? List<dynamic>.from(data['countries'] as List)
+          : <dynamic>[];
 
-        List<dynamic> tempCountries = data.keys.map((key) {
-          String displayName = data[key]['text_en'] ?? key.toUpperCase();
+      final tempCountries = list.map((item) {
+        final map = Map<String, dynamic>.from(item as Map);
+        final code = (map['code'] ?? '').toString().toLowerCase();
+        String displayName = (map['name'] ?? code).toString();
+        if (code == 'england') displayName = 'UK';
+        return {
+          'code': code,
+          'name': displayName,
+          'flag': _getFlag(code),
+        };
+      }).toList();
 
-          if (key.toLowerCase() == 'england') {
-            displayName = 'UK';
-          }
+      tempCountries.sort((a, b) {
+        final aCode = a['code'].toString().toLowerCase();
+        final bCode = b['code'].toString().toLowerCase();
+        final aIsPriority = priorityCountries.contains(aCode);
+        final bIsPriority = priorityCountries.contains(bCode);
 
-          return {
-            "code": key,
-            "name": displayName,
-            "flag": _getFlag(key),
-          };
-        }).toList();
+        if (aIsPriority && !bIsPriority) return -1;
+        if (!aIsPriority && bIsPriority) return 1;
+        if (aIsPriority && bIsPriority) {
+          return priorityCountries
+              .indexOf(aCode)
+              .compareTo(priorityCountries.indexOf(bCode));
+        }
+        return a['name'].toString().compareTo(b['name'].toString());
+      });
 
-        tempCountries.sort((a, b) {
-          final aCode = a['code'].toString().toLowerCase();
-          final bCode = b['code'].toString().toLowerCase();
-
-          final aIsPriority = priorityCountries.contains(aCode);
-          final bIsPriority = priorityCountries.contains(bCode);
-
-          if (aIsPriority && !bIsPriority) return -1;
-          if (!aIsPriority && bIsPriority) return 1;
-
-          if (aIsPriority && bIsPriority) {
-            return priorityCountries
-                .indexOf(aCode)
-                .compareTo(priorityCountries.indexOf(bCode));
-          }
-
-          return a['name'].compareTo(b['name']);
-        });
-
-        countries = tempCountries;
-      }
+      countries = tempCountries;
+    } on FirebaseFunctionsException catch (e) {
+      lastError = '${e.code}: ${e.message}';
+      debugPrint('Error fetching countries: $lastError');
+      countries = [];
     } catch (e) {
-      print("Error fetching countries: $e");
+      lastError = e.toString();
+      debugPrint('Error fetching countries: $e');
+      countries = [];
     }
 
     isLoading = false;
@@ -80,142 +82,52 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> fetchServicesForCountry(String countryCode) async {
-    if (countryServices.containsKey(countryCode)) return;
+    final code = countryCode.toLowerCase();
+    if (countryServices.containsKey(code) ||
+        _loadingCountryCodes.contains(code)) {
+      return;
+    }
 
+    _loadingCountryCodes.add(code);
     isLoadingServices = true;
     notifyListeners();
 
     try {
-      final productsUrl =
-          Uri.parse('https://5sim.net/v1/guest/products/$countryCode/any');
-      final productsRes =
-          await http.get(productsUrl, headers: {'Accept': 'application/json'});
-
-      if (productsRes.statusCode != 200) {
-        isLoadingServices = false;
-        notifyListeners();
-        return;
-      }
-
-      final productsData =
-          jsonDecode(productsRes.body) as Map<String, dynamic>;
-
-      final pricesUrl =
-          Uri.parse('https://5sim.net/v1/guest/prices?country=$countryCode');
-      final pricesRes =
-          await http.get(pricesUrl, headers: {'Accept': 'application/json'});
-
-      Map<String, dynamic> pricesData = {};
-      if (pricesRes.statusCode == 200) {
-        final decoded = jsonDecode(pricesRes.body);
-        if (decoded is Map && decoded.containsKey(countryCode)) {
-          pricesData = decoded[countryCode];
-        }
-      }
-
-      List<Map<String, dynamic>> services = [];
-
-      productsData.forEach((serviceName, info) {
-        final int qty = info['Qty'] ?? 0;
-
-        if (info['Category'] == 'activation' && qty > 0) {
-          double bestCost = (info['Price'] ?? 0.25).toDouble();
-          String bestOperator = "any";
-          double bestRate = 0;
-
-          if (pricesData.containsKey(serviceName)) {
-            final operators = pricesData[serviceName] as Map<String, dynamic>;
-
-            operators.forEach((operatorName, operatorInfo) {
-              double cost = (operatorInfo['cost'] ?? 999).toDouble();
-              int count = operatorInfo['count'] ?? 0;
-              double rate = (operatorInfo['rate'] ?? 0).toDouble();
-
-              if (count > 0) {
-                if (rate > bestRate) {
-                  bestRate = rate;
-                  bestCost = cost;
-                  bestOperator = operatorName;
-                } else if (rate == bestRate && cost < bestCost) {
-                  bestCost = cost;
-                  bestOperator = operatorName;
-                }
-              }
-            });
-          }
-
-          double sellingPrice = bestCost * 1.5;
-
-          services.add({
-            "name": serviceName,
-            "cost": bestCost,
-            "price": double.parse(sellingPrice.toStringAsFixed(2)),
-            "qty": qty,
-            "operator": bestOperator,
-            "rate": bestRate,
-            "isPopular": _isPopularService(serviceName),
-          });
-        }
+      final result = await _functions.httpsCallable('getProducts').call({
+        'country': code,
       });
+      final data = result.data;
 
-      services.sort((a, b) {
-        if (a['isPopular'] && !b['isPopular']) return -1;
-        if (!a['isPopular'] && b['isPopular']) return 1;
-        return a['name'].compareTo(b['name']);
-      });
+      final list = (data is Map && data['products'] is List)
+          ? List<dynamic>.from(data['products'] as List)
+          : <dynamic>[];
 
-      countryServices[countryCode] = services;
+      final services = list.map((item) {
+        final map = Map<String, dynamic>.from(item as Map);
+        return {
+          'name': (map['name'] ?? '').toString().toLowerCase(),
+          'cost': map['cost'],
+          'price': map['price'],
+          'qty': map['qty'] ?? 0,
+          'operator': map['operator'] ?? 'any',
+          'rate': map['rate'] ?? 0,
+          'isPopular': map['isPopular'] == true,
+        };
+      }).toList();
+
+      countryServices[code] = services;
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint(
+          'Error fetching services for $code: ${e.code} ${e.message}');
+      countryServices[code] = [];
     } catch (e) {
-      print("Error fetching services: $e");
+      debugPrint('Error fetching services for $code: $e');
+      countryServices[code] = [];
     }
 
-    isLoadingServices = false;
+    _loadingCountryCodes.remove(code);
+    isLoadingServices = _loadingCountryCodes.isNotEmpty;
     notifyListeners();
-  }
-
-  bool _isPopularService(String name) {
-    const popular = [
-      'telegram',
-      'whatsapp',
-      'google',
-      'instagram',
-      'facebook',
-      'tiktok',
-      'discord',
-      'twitter',
-      'amazon',
-      'microsoft',
-    ];
-    return popular.contains(name.toLowerCase());
-  }
-
-  Future<Map<String, dynamic>?> buyNumber(
-    String country,
-    String product, {
-    String operator = "any",
-  }) async {
-    try {
-      final url = Uri.parse(
-        'https://5sim.net/v1/user/buy/activation/$country/$operator/$product',
-      );
-
-      final res = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer $apiToken',
-          'Accept': 'application/json',
-        },
-      );
-
-      if (res.statusCode == 200) {
-        return jsonDecode(res.body);
-      } else {
-        print("Buy failed: ${res.body}");
-      }
-    } catch (e) {
-      print("Buy error: $e");
-    }
-    return null;
   }
 
   String _getFlag(String code) {
